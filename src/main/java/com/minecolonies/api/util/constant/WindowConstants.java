@@ -1,6 +1,5 @@
 package com.minecolonies.api.util.constant;
 
-import net.minecraft.client.gui.components.WidgetSprites;
 import net.minecraft.resources.Identifier;
 import net.neoforged.neoforge.common.util.Size2i;
 
@@ -1038,19 +1037,11 @@ public final class WindowConstants
      */
     public static final String WARNING_LABEL = "warning";
 
-    /**
-     * Crafting switch-output button.
-     */
-    public static final WidgetSprites CRAFTING_SWITCH = new WidgetSprites(
-        Identifier.fromNamespaceAndPath(MOD_ID, "craftingswitch"),
-        Identifier.fromNamespaceAndPath(MOD_ID, "craftingswitch_hover"));
-
-    /**
-     * Crafting request-list button.
-     */
-    public static final WidgetSprites CRAFTING_LIST = new WidgetSprites(
-        Identifier.fromNamespaceAndPath(MOD_ID, "craftinglist"),
-        Identifier.fromNamespaceAndPath(MOD_ID, "craftinglist_hover"));
+    // PORT26 (0.7.0, server-boot fix): the CRAFTING_SWITCH / CRAFTING_LIST WidgetSprites
+    // constants moved to WindowCrafting (their only consumer). WidgetSprites is a
+    // client-only class, and this class's <clinit> runs on dedicated servers too
+    // (common code static-imports these constants) — constructing them here crashed
+    // the server with NoClassDefFoundError: net/minecraft/client/gui/components/WidgetSprites.
 
     /**
      * Switch button size.

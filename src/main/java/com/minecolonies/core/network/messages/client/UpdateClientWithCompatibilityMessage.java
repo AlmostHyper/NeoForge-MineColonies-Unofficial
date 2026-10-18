@@ -6,8 +6,7 @@ import com.minecolonies.api.IMinecoloniesAPI;
 import com.minecolonies.api.util.Log;
 import com.minecolonies.api.util.constant.Constants;
 import io.netty.buffer.Unpooled;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.world.level.Level;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -50,7 +49,10 @@ public class UpdateClientWithCompatibilityMessage extends AbstractClientPlayMess
     @Override
     protected void onExecute(final IPayloadContext ctxIn, final Player player)
     {
-        final ClientLevel world = Minecraft.getInstance().level;
+        // PORT26 (0.7.0, server-boot fix): player.level() instead of Minecraft.getInstance().level —
+        // any reference to Minecraft.level's ClientLevel field descriptor fails class verification
+        // on dedicated servers (NoClassDefFoundError). Same client level, common API.
+        final Level world = player.level();
         try
         {
             IMinecoloniesAPI.getInstance().getColonyManager().getCompatibilityManager().deserialize(this.buffer, world);

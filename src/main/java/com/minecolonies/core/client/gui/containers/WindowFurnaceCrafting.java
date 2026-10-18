@@ -20,6 +20,7 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.ImageButton;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.client.gui.components.WidgetSprites;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
@@ -33,7 +34,6 @@ import java.util.List;
 import java.util.Map;
 
 import static com.minecolonies.api.util.constant.TranslationConstants.WARNING_MAXIMUM_NUMBER_RECIPES;
-import static com.minecolonies.api.util.constant.WindowConstants.CRAFTING_LIST;
 import static com.minecolonies.api.util.constant.WindowConstants.CRAFTING_SWITCH_SIZE;
 import static com.minecolonies.api.util.constant.translation.BaseGameTranslationConstants.BASE_GUI_DONE;
 
@@ -69,6 +69,11 @@ public class WindowFurnaceCrafting extends AbstractContainerScreen<ContainerCraf
      */
     private static final int REQUEST_X_OFFSET = 90 - (CRAFTING_SWITCH_SIZE.width / 2);
     private static final int REQUEST_Y_OFFSET = 70 - CRAFTING_SWITCH_SIZE.height;
+
+    // PORT26 (0.7.0, server-boot fix): moved here from WindowConstants (client-only WidgetSprites).
+    private static final WidgetSprites CRAFTING_LIST = new WidgetSprites(
+        Identifier.fromNamespaceAndPath(Constants.MOD_ID, "craftinglist"),
+        Identifier.fromNamespaceAndPath(Constants.MOD_ID, "craftinglist_hover"));
 
     /**
      * The building the window belongs to.

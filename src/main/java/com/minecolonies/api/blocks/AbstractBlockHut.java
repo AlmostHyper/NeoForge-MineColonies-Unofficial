@@ -19,8 +19,8 @@ import com.minecolonies.api.util.*;
 import com.minecolonies.api.util.constant.Constants;
 import com.minecolonies.api.util.constant.TranslationConstants;
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
@@ -145,7 +145,7 @@ public abstract class AbstractBlockHut<B extends AbstractBlockHut<B>> extends Ab
     }
 
     @Override
-    public List<MutableComponent> getRequirements(final ClientLevel level, final BlockPos pos, final LocalPlayer player)
+    public List<MutableComponent> getRequirements(final Level level, final BlockPos pos, final Player player)
     {
         final List<MutableComponent> requirements = new ArrayList<>();
         final IColonyView colonyView = IColonyManager.getInstance().getClosestColonyView(level, pos);
@@ -177,7 +177,7 @@ public abstract class AbstractBlockHut<B extends AbstractBlockHut<B>> extends Ab
     }
 
     @Override
-    public boolean areRequirementsMet(final ClientLevel level, final BlockPos pos, final LocalPlayer player)
+    public boolean areRequirementsMet(final Level level, final BlockPos pos, final Player player)
     {
         if (player.isCreative())
         {

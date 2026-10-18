@@ -50,3 +50,9 @@ description='''${mod_description}'''
 # Access transformer (same AT format as NeoForge 1.21+)
 [[accessTransformers]]
     file="META-INF/accesstransformer.cfg"
+
+# PORT26 compat-fix: registry thread-safety during parallel mod construction
+# (prevents ConcurrentModificationException when OTHER mods register into vanilla
+# registries from their mod constructors — see com.ldtteam.minecolonies.mixin).
+[[mixins]]
+    config = "minecolonies.mixins.json"

@@ -1,6 +1,7 @@
 package com.minecolonies.core.client.gui.containers;
 
 import com.minecolonies.api.colony.IColonyManager;
+import com.minecolonies.api.util.constant.Constants;
 import com.minecolonies.api.colony.requestsystem.request.IRequest;
 import com.minecolonies.api.colony.requestsystem.requestable.IConcreteDeliverable;
 import com.minecolonies.api.compatibility.Compatibility;
@@ -18,6 +19,7 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.ImageButton;
+import net.minecraft.client.gui.components.WidgetSprites;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -66,6 +68,16 @@ public class WindowCrafting extends AbstractContainerScreen<ContainerCrafting>
      * Switch button horizontal location.
      */
     private static final int SWITCH_X_OFFSET = 148;
+
+    // PORT26 (0.7.0, server-boot fix): moved here from WindowConstants — WidgetSprites is a
+    // client-only class and WindowConstants' <clinit> runs on dedicated servers too.
+    private static final WidgetSprites CRAFTING_SWITCH = new WidgetSprites(
+        Identifier.fromNamespaceAndPath(Constants.MOD_ID, "craftingswitch"),
+        Identifier.fromNamespaceAndPath(Constants.MOD_ID, "craftingswitch_hover"));
+
+    private static final WidgetSprites CRAFTING_LIST = new WidgetSprites(
+        Identifier.fromNamespaceAndPath(Constants.MOD_ID, "craftinglist"),
+        Identifier.fromNamespaceAndPath(Constants.MOD_ID, "craftinglist_hover"));
 
     /**
      * Switch button vertical location.

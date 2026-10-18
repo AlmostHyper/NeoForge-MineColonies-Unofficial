@@ -106,9 +106,11 @@ public final class AssetProvisioner
      *       content (equipment PNGs, {@code damage_type}, researches,
      *       {@code recipe/blockhutstable}, upstream-identical lang keys) is no longer
      *       bundled — the store + converter now provide all of it.</li>
+     *   <li>{@code port26-7} — upstream sync to {@code minecolonies-1.1.1403-1.21.1-
+     *       snapshot} (10 new fortress/sandstone military-stable blueprints).</li>
      * </ul>
      */
-    private static final String MARKER_FORMAT = "port26-6";
+    private static final String MARKER_FORMAT = "port26-7";
 
     /** Progress report interval for streamed downloads (250 ms). */
     private static final long PROGRESS_REPORT_INTERVAL_NANOS = 250_000_000L;

@@ -4,9 +4,6 @@ import com.ldtteam.common.network.AbstractClientPlayMessage;
 import com.ldtteam.common.network.PlayMessageType;
 import com.minecolonies.api.colony.IColony;
 import com.minecolonies.api.util.constant.Constants;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.resources.sounds.SimpleSoundInstance;
-import net.minecraft.client.resources.sounds.SoundInstance;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
@@ -72,9 +69,9 @@ public class PlayAudioMessage extends AbstractClientPlayMessage
     @Override
     protected void onExecute(final IPayloadContext ctxIn, final Player player)
     {
-        Minecraft.getInstance().getSoundManager().play(new SimpleSoundInstance(
-          soundEvent, category,
-            1.0F, 1.0F, RandomSource.create(), false, 0, SoundInstance.Attenuation.NONE, player.getX(), player.getY(), player.getZ(), true));
+        // PORT26 (0.7.0, server-boot fix): client sound classes live in ClientSoundHelper —
+        // referencing them here failed class verification on dedicated servers.
+        com.minecolonies.core.client.ClientSoundHelper.playAtPlayer(soundEvent, category, player);
     }
 
     /**

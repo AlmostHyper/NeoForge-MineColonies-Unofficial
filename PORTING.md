@@ -3,7 +3,7 @@
 ## Source Baseline (locked)
 | Mod | Version | Source | Java files |
 |---|---|---|---|
-| minecolonies | 1.1.1399-1.21.1-snapshot | github.com/ldtteam/minecolonies tag v1.21.1-1.1.1399-snapshot | 2061 |
+| minecolonies | 1.1.1403-1.21.1 (0.7.0 sync from 1.1.1399) | github.com/ldtteam/minecolonies tag v1.21.1-1.1.1403-snapshot | 2061 |
 | structurize | 1.0.833-1.21.1-snapshot | github.com/ldtteam/structurize tag v1.21.1-1.0.833-snapshot | 194 |
 | blockui | 1.0.212-1.21.1-snapshot | github.com/ldtteam/blockui tag v1.21.1-1.0.212-snapshot | 109 |
 | domum-ornamentum | 1.0.236-snapshot | github.com/ldtteam/domum-ornamentum tag v1.21.1-1.0.236-snapshot | 231 |
@@ -12,8 +12,141 @@
 
 Reference sources cloned at: `/home/z/my-project/portsrc/` (283 MB total, 2604 java files).
 
+
+## 0.7.1 — wover (WorldWeaver) Bootstrap crash fix: @Overwrite → @Redirect
+
+Released baseline: `1.1.1403-port26.1.2-0.7.1`.
+
+### 1. Regression in 0.7.0: @Overwrite reorder broke name-only injectors (wover)
+
+**Crash (modpack with WoVer via Connector, NeoForge 26.1.2.122):**
+`Invalid descriptor on wover.core.mixins.common.json:registry.MappedRegistryMixin
+->@Inject::wover_register(...)V! Expected (ILnet/minecraft/resources/ResourceKey;...)V
+but found (Lnet/minecraft/resources/ResourceKey;...)V` — fatal during vanilla
+`Bootstrap` (`BuiltInRegistries.<clinit>` → first classload of `MappedRegistry`),
+i.e. **before any mod is constructed**.
+
+**Root cause:** WoVer's mixin targets `@Inject(method = "register", ...)` **by name only**.
+NeoForge-patched `MappedRegistry` has TWO overloads: the vanilla 3-arg
+`register(ResourceKey, T, RegistrationInfo)` and the NeoForge-added 4-arg
+`register(int, ResourceKey, T, RegistrationInfo)`. 0.7.0's `@Overwrite` merge
+**removes the original 3-arg method and re-appends the replacement at the end of the
+class method list** — that reorder changes which overload a name-only selector resolves
+against, so WoVer's handler is bound to the 4-arg overload and fails the descriptor
+check. The 0.7.0 mixin alone is healthy; it is specifically the `@Overwrite` merge that
+poisons later-applied name-only injectors from other mods.
+
+**Repro matrix (dedicated server, NeoForge 26.1.2.122, sponge-mixin 0.17.4, plus a
+byte-exact replica of WoVer 26.101.x's MappedRegistryMixin):**
+
+| MineColonies mixin present                        | wover mixin | Result                              |
+|---------------------------------------------------|-------------|-------------------------------------|
+| none                                              | name-only   | boots, wover applies                |
+| 0.7.0 `@Overwrite` + shadows                      | name-only   | **crash (user's log, 1:1)**         |
+| `@Overwrite` only (no shadows) — bisect           | name-only   | crash → @Overwrite is the trigger   |
+| shadows only (no overwrite) — control             | name-only   | boots                               |
+| **0.7.1 `@Redirect`**                             | name-only   | **boots, both mixins apply**        |
+
+### 2. Fix: @Redirect the internal delegation (method untouched)
+
+`MappedRegistryMixin` now redirects the single internal call
+`this.register(this.byId.size(), key, value, info)` *inside* the untouched 3-arg
+`register` to a handler that locks the registry, re-mints the numeric id **inside**
+the lock and invokes the 4-arg implementation. The 3-arg method keeps its name,
+descriptor, position and flags, so other mods' injectors targeting it resolve exactly
+as on a pristine class. The CME protection of 0.7.0 is fully preserved (same
+per-registry lock, id minting inside the lock, 4-arg implementation untouched,
+`required: false` fail-open).
+
+### 3. Verification
+
+- Full census compile: 2488 files / 3105 classes / 0 errors.
+- E2E dedicated-server boot (NeoForge **26.1.2.122**): `minecolonies-0.7.1.jar` +
+  wover-replica mixin in `mods/` → `Done (10.1s)`, MineColonies constructs, both
+  mixins apply (`Mixing MappedRegistryMixin from minecolonies.mixins.json…` then
+  `Mixing registry.MappedRegistryMixin from wover.core.mixins.common.json…`),
+  zero `InvalidInjectionException`, world gen + item discovery (1824) normal.
+- 0.7.0 + wover on the same server reproduces the user's crash byte-for-byte
+  (sanity anchor for the matrix above).
+
+
+## 0.7.0 — CME crash fix (registry thread-safety mixin), upstream 1.1.1403 sync, dedicated-server boot fixes
+
+Released baseline: `1.1.1403-port26.1.2-0.7.0`.
+
+### 1. Registry thread-safety mixin (modpack ConcurrentModificationException fix)
+
+**Crash:** `java.util.ConcurrentModificationException` in `HashMap.computeIfAbsent` ←
+`net.minecraft.core.MappedRegistry.register` during **parallel mod construction** (e.g. wover's
+`BiomeCodecRegistryImpl` racing another construction-phase registrant such as Blueprint / Better
+Archeology). NeoForge constructs mods on `modloading-worker-*` threads; `MappedRegistry` is backed
+by plain `HashMap`s, so two mods that (illegally, but commonly) register into the *same* vanilla
+registry from their constructors corrupt the map and crash the whole pack. This port's own
+bootstrap was already clean (DeferredRegister / RegisterEvent only — audited), so the crash was
+strictly a cross-mod race — but the pack boots with the port present only when the race is gone.
+
+**Fix shipped in this port (fail-open):** `com.ldtteam.minecolonies.mixin.MappedRegistryMixin`
+(`minecolonies.mixins.json`, `required: false`) overwrites only the 3-arg
+`register(ResourceKey, T, RegistrationInfo)` — the entry point used by every
+`Registry.register(...)` static — with a `synchronized (this)` delegation that also moves the
+`byId.size()` id computation inside the lock. The NeoForge-patched 4-arg implementation (with
+`addCallbacks` / immediate `bindValue` / id range validation) and other mods' injectors into it are
+left untouched. The lock is per-registry and reentrant; the single-threaded `RegisterEvent` path
+pays one uncontended monitor enter per registration. The mixin was verified against the
+installer-patched `minecraft-client-patched-26.1.2.109.jar` (both register methods exist exactly in
+the shadowed/overwritten shapes).
+
+### 2. Upstream sync: minecolonies 1.1.1399 → 1.1.1403 (1.21.1)
+
+- `InventoryUtils`: partial-transfer failure now returns `false` early instead of looping
+  (upstream fix for stuck item transfers).
+- `EntityAIWorkUndertaker.buryCitizen`: `getFirstModuleOccurance` → `getModule`, and a full
+  graveyard drops the pending grave (`setLastGraveData(null)`, return `INVENTORY_FULL`) instead of
+  IDLE-looping forever on the same citizen (upstream fix).
+- PortAssets store: upstream CurseForge release jar bumped to
+  `minecolonies-1.1.1403-1.21.1-snapshot` (file 9023811), `MARKER_FORMAT` `port26-6` → `port26-7`
+  — 10 new fortress/sandstone military-stable blueprints (9454 total upstream) force a
+  re-provisioning of existing stores.
+- BlockUI 1.0.212: verified already fully ported (View draw loops over `new ArrayList<>(children)`)
+  — no changes needed. Structurize (1.0.833), Domum Ornamentum (1.0.236), MultiPiston (1.2.58)
+  unchanged upstream.
+
+### 3. Dedicated-server boot fixes (pre-existing 0.6.0 landmines, all NoClassDefFoundError)
+
+The port's mod construction and registry phases reference client-only classes in signatures /
+locals of classes that load on BOTH dists — NeoForge 26.1 class verification resolves those
+descriptors eagerly on the server. Fixed (all verified by a full headless dedicated-server boot
+to "Done (9.653s)"):
+
+- `ICompatibilityManager` / `CompatibilityManager.deserialize`: `ClientLevel` → `Level`.
+- `ISurvivalBlueprintHandler.canHandle` (+ SurvivalHandler, SuppliesHandler) and
+  `SurvivalBlueprintHandlers.getMatchingHandlers`: `ClientLevel` → `Level`.
+- `IRequirementsBlueprintAnchorBlock` (+ `AbstractBlockHut`, `BlockHutTownHall`):
+  `ClientLevel`/`LocalPlayer` → `Level`/`Player`.
+- Domum `TimberFrameBlock` / `DynamicTimberFrameBlock` / `FramedLightBlock`:
+  `shouldDisplayFluidOverlay` now overrides the real NeoForge 26.1 `IBlockExtension` signature
+  (`BlockAndLightGetter`, common) — the old `BlockAndTintGetter` (client) version was a dead
+  overload that never ran.
+- `WindowConstants`: the two `WidgetSprites` constants moved to their only consumers
+  (`WindowCrafting`, `WindowFurnaceCrafting`) — `WindowConstants.<clinit>` runs on servers too.
+- `UpdateClientWithCompatibilityMessage.onExecute`: `player.level()` instead of
+  `Minecraft.getInstance().level` (the `Minecraft.level` field descriptor fails server-side class
+  verification).
+- `PlayAudioMessage.onExecute`: client sound classes extracted to
+  `com.minecolonies.core.client.ClientSoundHelper`.
+- `data/minecraft/tags/damage_type/{bypasses_shield,bypasses_armor,is_projectile}.json`: the
+  minecolonies entries are now `required: false` — with the external ARR store not (yet)
+  provisioned the damage types are absent, and the hard references crashed registry freeze
+  ("Unbound values in registry minecraft:damage_type").
+
+### 4. Dev tooling
+
+- `tools/compile-check.sh`: javac census (2487 files, 0 errors) against a locally assembled
+  patched+AT-publicized compile classpath — for environments where the full NeoGradle userdev
+  pipeline (decompile+recompile of all of Minecraft) is too heavy.
+
 ## Target
-- Minecraft **26.1.2**, NeoForge **26.1.2.95**, Java **25** (source was MC 1.21.1 / NeoForge 21.1.80 / Java 21)
+- Minecraft **26.1.2**, NeoForge **26.1.2.109** (26.1.2.x compatible), Java **25** (source was MC 1.21.1 / NeoForge 21.1.80 / Java 21)
 - **SINGLE merged mod** — mod id `minecolonies`, group `com.ldtteam`.
   All former dependencies live in this one jar. No separate structurize/blockui/domum/multipiston/towntalk mods.
 - `sophisticatedstorage-26.1.2-1.5.112.2123.jar` stays a runtime jar dependency (already on 26.1.2).

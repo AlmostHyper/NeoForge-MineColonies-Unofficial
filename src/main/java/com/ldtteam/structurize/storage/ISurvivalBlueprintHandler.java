@@ -2,7 +2,7 @@ package com.ldtteam.structurize.storage;
 
 import com.ldtteam.structurize.blueprints.v1.Blueprint;
 import com.ldtteam.structurize.api.RotationMirror;
-import net.minecraft.client.multiplayer.ClientLevel;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
@@ -34,7 +34,7 @@ public interface ISurvivalBlueprintHandler
      * @param rotMir the placement settings.
      * @return true if so.
      */
-    boolean canHandle(final Blueprint blueprint, final ClientLevel level, final Player player, final BlockPos pos, final RotationMirror rotMir);
+    boolean canHandle(final Blueprint blueprint, final Level level, final Player player, final BlockPos pos, final RotationMirror rotMir);
 
     /**
      * Handle the placement.

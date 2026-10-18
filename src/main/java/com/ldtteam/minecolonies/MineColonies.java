@@ -13,14 +13,15 @@ import org.apache.logging.log4j.Logger;
 /**
  * MineColonies — port entry point.
  *
- * <p>Port target: Minecraft 26.1.2 / NeoForge 26.1.2.95 / Java 25.
- * Source baseline: MineColonies 1.1.1374-1.21.1-snapshot (MC 1.21.1 / NeoForge 21.1.80 / Java 21).
+ * <p>Port target: Minecraft 26.1.2 / NeoForge 26.1.2.x / Java 25.
+ * Source baseline: MineColonies 1.1.1403-1.21.1 (MC 1.21.1 / NeoForge 21.1.80 / Java 21),
+ * synced from 1.1.1399 by the 0.7.0 upstream sync.
  *
  * <p>This is a SINGLE merged mod. The former separate dependencies (Structurize, BlockUI,
  * Domum Ornamentum, Multi-Piston, TownTalk) are merged into this mod's source tree during
  * the port — see PORTING.md in the project root for the phase plan.
  *
- * <p>Port status: PHASE 2 — domum-ornamentum merge in progress.
+ * <p>Port status: released (0.4.0+) — see PORTING.md for the phase history.
  */
 @Mod(MineColonies.MOD_ID)
 public final class MineColonies {
@@ -29,7 +30,7 @@ public final class MineColonies {
     public static final Logger LOGGER = LogManager.getLogger(MOD_NAME);
 
     public MineColonies(final IEventBus modEventBus, final ModContainer modContainer) {
-        LOGGER.info("MineColonies 26.1.2 port — starting (base 1.1.1374-1.21.1-snapshot)");
+        LOGGER.info("MineColonies 26.1.2 port — starting (base 1.1.1403-1.21.1)");
         LOGGER.info("Merged single-mod layout: structurize + blockui + domum-ornamentum + multipiston + towntalk");
 
         // PHASE 1: blockui (merged)

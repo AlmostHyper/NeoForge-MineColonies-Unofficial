@@ -4,7 +4,7 @@ import com.google.common.collect.ImmutableSet;
 import com.minecolonies.api.crafting.CompostRecipe;
 import com.minecolonies.api.crafting.ItemStorage;
 import com.minecolonies.core.util.FurnaceRecipes;
-import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.world.level.Level;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -53,7 +53,7 @@ public interface ICompatibilityManager
      *
      * @param buf deserialization buffer
      */
-    void deserialize(@NotNull final RegistryFriendlyByteBuf buf, final ClientLevel level);
+    void deserialize(@NotNull final RegistryFriendlyByteBuf buf, final Level level);
 
     /**
      * Gets the sapling matching a leaf.

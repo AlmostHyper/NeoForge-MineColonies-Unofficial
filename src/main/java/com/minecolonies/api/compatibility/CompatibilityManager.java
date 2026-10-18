@@ -17,7 +17,7 @@ import com.minecolonies.core.colony.crafting.LootTableAnalyzer;
 import com.minecolonies.core.util.FurnaceRecipes;
 import it.unimi.dsi.fastutil.ints.*;
 import it.unimi.dsi.fastutil.objects.Object2IntLinkedOpenHashMap;
-import net.minecraft.client.multiplayer.ClientLevel;
+
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.Registry;
 import net.minecraft.core.component.DataComponentType;
@@ -239,7 +239,7 @@ public class CompatibilityManager implements ICompatibilityManager
     }
 
     @Override
-    public void deserialize(@NotNull final RegistryFriendlyByteBuf buf, final ClientLevel level)
+    public void deserialize(@NotNull final RegistryFriendlyByteBuf buf, final Level level)
     {
         clear();
 

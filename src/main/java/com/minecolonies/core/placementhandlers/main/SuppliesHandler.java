@@ -13,7 +13,7 @@ import com.minecolonies.api.util.ItemStackUtils;
 import com.minecolonies.api.util.MessageUtils;
 import com.minecolonies.api.util.SoundUtils;
 import com.minecolonies.core.MineColonies;
-import net.minecraft.client.multiplayer.ClientLevel;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -47,7 +47,7 @@ public class SuppliesHandler implements ISurvivalBlueprintHandler
     }
 
     @Override
-    public boolean canHandle(final Blueprint blueprint, final ClientLevel clientLevel, final Player player, final BlockPos blockPos, final RotationMirror rotMir)
+    public boolean canHandle(final Blueprint blueprint, final Level clientLevel, final Player player, final BlockPos blockPos, final RotationMirror rotMir)
     {
         return false;
     }

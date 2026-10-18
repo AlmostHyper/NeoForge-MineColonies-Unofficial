@@ -3,7 +3,7 @@ package com.ldtteam.structurize.storage;
 import com.google.common.collect.ImmutableList;
 import com.ldtteam.structurize.blueprints.v1.Blueprint;
 import com.ldtteam.structurize.api.RotationMirror;
-import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.world.level.Level;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Player;
 
@@ -60,7 +60,7 @@ public class SurvivalBlueprintHandlers
      * Get all handlers that can take over the placement operation.
      * @return
      */
-    public static List<ISurvivalBlueprintHandler> getMatchingHandlers(final Blueprint blueprint, final ClientLevel level, final Player player, final BlockPos pos, final RotationMirror rotMir)
+    public static List<ISurvivalBlueprintHandler> getMatchingHandlers(final Blueprint blueprint, final Level level, final Player player, final BlockPos pos, final RotationMirror rotMir)
     {
         final List<ISurvivalBlueprintHandler> matchingHandlers = new ArrayList<>();
         for (final ISurvivalBlueprintHandler handler : handlers.values())
