@@ -85,7 +85,11 @@ public class TileEntityScarecrow extends AbstractTileEntityScarecrow
     public void loadAdditional(final net.minecraft.world.level.storage.ValueInput input)
     {
         super.loadAdditional(input);
-        fieldSize = input.getIntArray(TAG_RADIUS).orElse(new int[0]);
+        // PORT26 FIX (v0.7.2): the old fallback `new int[0]` produced an empty array whenever
+        // the radius tag was missing (fields placed/saved by older builds, legacy chunk data),
+        // crashing the field GUI (AIOOBE index 2 = Direction.NORTH) and the farmer AI.
+        // Restore safe defaults instead.
+        fieldSize = sanitizeRadii(input.getIntArray(TAG_RADIUS).orElse(null));
     }
 
     /**
@@ -94,6 +98,11 @@ public class TileEntityScarecrow extends AbstractTileEntityScarecrow
      */
     public void setFieldSize(Direction direction, int radius)
     {
+        // PORT26 FIX (v0.7.2): never index a malformed array.
+        if (this.fieldSize.length != 4)
+        {
+            this.fieldSize = sanitizeRadii(this.fieldSize);
+        }
         this.fieldSize[direction.get2DDataValue()] = Math.min(radius, MAX_RANGE);
         setChanged();
     }
@@ -121,6 +130,13 @@ public class TileEntityScarecrow extends AbstractTileEntityScarecrow
      */
     public int[] getFieldSize()
     {
+        // PORT26 FIX (v0.7.2): defensive normalization — guarantees every caller
+        // (field GUI, resize message, colony sync) sees a safe 4-entry array even if
+        // the in-memory state was somehow corrupted.
+        if (fieldSize.length != 4)
+        {
+            fieldSize = new int[] {DEFAULT_RANGE, DEFAULT_RANGE, DEFAULT_RANGE, DEFAULT_RANGE};
+        }
         return fieldSize;
     }
 }

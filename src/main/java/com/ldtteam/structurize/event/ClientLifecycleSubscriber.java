@@ -8,7 +8,6 @@ import com.ldtteam.structurize.api.constants.Constants;
 import com.ldtteam.structurize.client.model.OverlaidModelLoader;
 import com.ldtteam.structurize.items.ItemStackTooltip;
 import com.ldtteam.structurize.items.ModItems;
-import com.ldtteam.structurize.placement.handlers.placement.PlacementHandlers.ContainerPlacementHandler;
 import com.ldtteam.structurize.storage.ClientStructurePackLoader;
 import com.ldtteam.structurize.util.WorldRenderMacros;
 import net.minecraft.resources.Identifier;
@@ -16,7 +15,6 @@ import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.client.event.AddClientReloadListenersEvent;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.ModelEvent;
@@ -27,15 +25,14 @@ import net.neoforged.neoforge.client.event.RegisterRenderPipelinesEvent;
 
 public class ClientLifecycleSubscriber
 {
-    @SubscribeEvent
-    public static void onClientInit(final FMLClientSetupEvent event)
-    {
-        ClientStructurePackLoader.onClientLoading();
-    }
-
+    // Upstream 1.0.839: ClientStructurePackLoader.onClientLoading() moved from FMLClientSetupEvent
+    // to reload-listener registration time (RegisterClientReloadListenersEvent upstream; on 26.1.2
+    // the equivalent event is AddClientReloadListenersEvent, which this port already handles below).
     @SubscribeEvent
     public static void onRegisterReloadListeners(final AddClientReloadListenersEvent event)
     {
+        ClientStructurePackLoader.onClientLoading();
+
         // PORT26: RegisterClientReloadListenersEvent#registerReloadListener(PreparableReloadListener)
         // became AddClientReloadListenersEvent#addListener(Identifier, PreparableReloadListener)
         // (same adaptation as the blockui port).

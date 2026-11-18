@@ -30,7 +30,7 @@ import net.neoforged.neoforge.common.NeoForge;
  * <p>Consequently the loader externalizes FOUR namespaces (all ARR, all fetched at runtime
  * from their official CurseForge channels — never bundled):</p>
  * <ul>
- *   <li><b>minecolonies</b> — {@code minecolonies-1.1.1403-1.21.1-snapshot} (CurseForge /
+ *   <li><b>minecolonies</b> — {@code minecolonies-1.1.1420-1.21.1} (CurseForge /
  *       forgecdn direct link — stable, no auth). Its jar also carries the mixed
  *       {@code data/c/**}, {@code data/dynamictrees/**}, {@code data/neoforge/**} and
  *       {@code data/minecraft/**} contributions (tags merge additively across packs, so
@@ -77,12 +77,13 @@ public final class PortAssets
         new AssetNamespace(
             "minecolonies",
             "MineColonies (textures, models, sounds, lang)",
-            "https://mediafilez.forgecdn.net/files/9023/811/minecolonies-1.1.1403-1.21.1-snapshot.jar",
-            "minecolonies-1.1.1403-1.21.1-snapshot.jar",
+            "https://mediafilez.forgecdn.net/files/9624/268/minecolonies-1.1.1420-1.21.1.jar",
+            "minecolonies-1.1.1420-1.21.1.jar",
             "https://codeload.github.com/ldtteam/minecolonies/tar.gz/refs/heads/version/1.21",
             null,
             null,
-            "MineColonies ARR assets + data + blueprints (10704 blueprint files — 10 new fortress/sandstone military stables in 1.1.1403). The only "
+            "MineColonies ARR assets + data + blueprints (upstream 1.1.1420 release — security-hardened network "
+                + "layer, builder frame stage, raider target tag, 2 new visitors). The only "
                 + "ARR art namespace of the mod family — structurize/domum_ornamentum/blockui/"
                 + "multipiston are GPL-3.0 and stay bundled in the jar."),
         new AssetNamespace(

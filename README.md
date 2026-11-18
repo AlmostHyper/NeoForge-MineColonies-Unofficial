@@ -18,14 +18,14 @@ the community. For the official mod, bugs and feature requests, please use the
 
 ## Status
 
-Current port release: **`1.1.1403-port26.1.2-0.7.1`** (see `gradle.properties`).
+Current port release: **`1.1.1420-port26.1.2-0.7.3`** (see `gradle.properties`).
 
 | Component | Base (1.21.1)                                                        | Port target |
 |---|----------------------------------------------------------------------|---|
-| MineColonies | `1.1.1403-1.21.1` (ldtteam — latest 1.21.1 snapshot release) | MC `26.1.2` |
-| Structurize | `1.0.833-1.21.1-snapshot` (pinned)                                   | merged into this mod |
+| MineColonies | `1.1.1420-1.21.1` (ldtteam — latest 1.21.1 release) | MC `26.1.2` |
+| Structurize | `1.0.839-1.21.1-snapshot` (pinned)                                   | merged into this mod |
 | BlockUI | `1.0.212-1.21.1-snapshot` (pinned)                                   | merged into this mod |
-| Domum Ornamentum | `1.0.236-snapshot` (pinned)                                          | merged into this mod |
+| Domum Ornamentum | `1.0.237-snapshot` (pinned)                                          | merged into this mod |
 | Multi-Piston | `1.2.58-1.21.1` (pinned)                                             | merged into this mod |
 
 The port tracks the **latest 1.21.1 sources of the upstream project** and re-targets
@@ -67,7 +67,7 @@ bundled in the mod jar (they are ARR, see below).
 ### First run without internet
 
 If the machine playing has no internet access: put the official
-`minecolonies-1.1.1403-1.21.1` jar into
+`minecolonies-1.1.1420-1.21.1` jar into
 `<gamedir>/port-assets/source-jars/`, restart the game and press **[Download]** —
 assets are extracted locally without any network access.
 

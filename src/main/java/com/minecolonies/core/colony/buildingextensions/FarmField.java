@@ -23,6 +23,7 @@ import net.minecraft.world.level.block.WallBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Locale;
 
@@ -44,6 +45,31 @@ public class FarmField extends AbstractBuildingExtension
     public static final  String TAG_RADIUS    = "radius";
     private static final String TAG_MAX_RANGE = "maxRange";
     private static final String TAG_STAGE     = "stage";
+
+    /**
+     * PORT26 FIX (v0.7.2): worlds persisted by older builds of the port (or older upstream
+     * save formats) may carry a missing, empty or malformed 'radius' array on the scarecrow
+     * tile entity / colony field data. The previous fallback ({@code new int[0]}) crashed the
+     * field GUI with {@code ArrayIndexOutOfBoundsException: Index 2 out of bounds for length 0}
+     * (Direction.NORTH == 2D index 2) and would also crash the server-side farmer AI.
+     * Always coerce radii into a safe, clamped 4-entry array in S,W,N,E order.
+     *
+     * @param in the loaded/incoming radii array (may be null, empty or wrong length).
+     * @return a safe 4-entry copy clamped to [0, {@link #MAX_RANGE}].
+     */
+    public static int[] sanitizeRadii(@Nullable final int[] in)
+    {
+        if (in == null || in.length != 4)
+        {
+            return new int[] {DEFAULT_RANGE, DEFAULT_RANGE, DEFAULT_RANGE, DEFAULT_RANGE};
+        }
+        return new int[] {
+            Math.max(0, Math.min(in[0], MAX_RANGE)),
+            Math.max(0, Math.min(in[1], MAX_RANGE)),
+            Math.max(0, Math.min(in[2], MAX_RANGE)),
+            Math.max(0, Math.min(in[3], MAX_RANGE))
+        };
+    }
 
     /**
      * The currently selected seed on the field, if any.
@@ -87,7 +113,9 @@ public class FarmField extends AbstractBuildingExtension
             final BlockEntity fieldBlock = worldIn.getBlockEntity(position);
             if (fieldBlock instanceof TileEntityScarecrow scarecrow)
             {
-                farmField.radii = scarecrow.getFieldSize();
+                // PORT26 FIX (v0.7.2): copy + sanitize — do not alias the TE array (an empty
+                // legacy array would propagate straight into the colony data).
+                farmField.radii = sanitizeRadii(scarecrow.getFieldSize());
             }
         }
         return farmField;
@@ -115,8 +143,21 @@ public class FarmField extends AbstractBuildingExtension
     {
         super.deserializeNBT(provider, compound);
         setSeed(ItemStackUtils.parseOptionalStack(provider, compound.getCompoundOrEmpty(TAG_SEED)));
-        radii = compound.getIntArray(TAG_RADIUS).orElse(new int[0]);
-        fieldStage = Stage.valueOf(compound.getStringOr(TAG_STAGE, ""));
+        // PORT26 FIX (v0.7.2): never fall back to an empty array — legacy colony data without
+        // the radius tag must restore safe defaults instead of crashing the GUI/AI.
+        radii = sanitizeRadii(compound.getIntArray(TAG_RADIUS).orElse(null));
+        // PORT26 FIX (v0.7.2): Stage.valueOf() throws IllegalArgumentException on unknown or
+        // missing stage names — parse leniently with a fallback to EMPTY.
+        final String stageName = compound.getStringOr(TAG_STAGE, Stage.EMPTY.name());
+        fieldStage = Stage.EMPTY;
+        for (final Stage stage : Stage.values())
+        {
+            if (stage.name().equals(stageName))
+            {
+                fieldStage = stage;
+                break;
+            }
+        }
     }
 
     @Override
@@ -133,7 +174,8 @@ public class FarmField extends AbstractBuildingExtension
     {
         super.deserialize(buf);
         setSeed(Utils.deserializeCodecMess(buf));
-        radii = buf.readVarIntArray();
+        // PORT26 FIX (v0.7.2): defensive sanitize on the network path as well.
+        radii = sanitizeRadii(buf.readVarIntArray());
         fieldStage = buf.readEnum(Stage.class);
     }
 

@@ -108,9 +108,12 @@ public final class AssetProvisioner
      *       bundled — the store + converter now provide all of it.</li>
      *   <li>{@code port26-7} — upstream sync to {@code minecolonies-1.1.1403-1.21.1-
      *       snapshot} (10 new fortress/sandstone military-stable blueprints).</li>
+     *   <li>{@code port26-8} — upstream sync to {@code minecolonies-1.1.1420-1.21.1}
+     *       (security-hardened network layer, builder BUILD_FRAME stage, raider target
+     *       entity tag, 2 new visitors, lang refresh).</li>
      * </ul>
      */
-    private static final String MARKER_FORMAT = "port26-7";
+    private static final String MARKER_FORMAT = "port26-8";
 
     /** Progress report interval for streamed downloads (250 ms). */
     private static final long PROGRESS_REPORT_INTERVAL_NANOS = 250_000_000L;

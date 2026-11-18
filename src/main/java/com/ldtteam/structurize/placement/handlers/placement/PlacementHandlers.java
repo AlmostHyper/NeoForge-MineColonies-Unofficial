@@ -354,22 +354,9 @@ public final class PlacementHandlers
 
             if (!BlockUtils.isAnySolid(world.getBlockState(pos.below())))
             {
-                BlockPos posBelow = pos;
-                BlockState supportBlockState = Blocks.DIRT instanceof Fallable ? Blocks.STONE.defaultBlockState() : Blocks.DIRT.defaultBlockState();
-                for (int i = 0; i < 10; i++) // try up to ten blocks below for solid worldgen
-                {
-                    posBelow = posBelow.below();
-                    final boolean isFirstTest = i == 0;
-                    final BlockState possibleSupport = BlockUtils.getWorldgenBlock(world, posBelow, bp -> isFirstTest ? blockState : null);
-                    if (possibleSupport != null && BlockUtils.canBlockFloatInAir(possibleSupport) && !canHandle(world,
-                        posBelow,
-                        possibleSupport))
-                    {
-                        supportBlockState = possibleSupport;
-                        break;
-                    }
-                }
+                final Blueprint blueprint = placementContext.getBluePrint();
 
+                BlockState supportBlockState = placementContext.getSolidBlockForPos(pos, blueprint == null ? ignored -> null : blueprint.getRawBlockStateFunction());
                 if (canHandle(world, pos, supportBlockState))
                 {
                     Log.getLogger().warn("Unable to use: " + supportBlockState + " as support for a falling block, it is either a falling black itself or made fallable");
@@ -397,19 +384,7 @@ public final class PlacementHandlers
 
             if (!BlockUtils.isAnySolid(world.getBlockState(pos.below())))
             {
-                BlockPos posBelow = pos;
-                BlockState supportBlockState = Blocks.DIRT.defaultBlockState();
-                for (int i = 0; i < 10; i++) // try up to ten blocks below for solid worldgen
-                {
-                    posBelow = posBelow.below();
-                    final boolean isFirstTest = i == 0;
-                    final BlockState possibleSupport = BlockUtils.getWorldgenBlock(world, posBelow, bp -> isFirstTest ? blockState : null);
-                    if (possibleSupport != null && BlockUtils.canBlockFloatInAir(possibleSupport))
-                    {
-                        supportBlockState = possibleSupport;
-                        break;
-                    }
-                }
+                BlockState supportBlockState = placementContext.getSolidBlockForPos(pos, placementContext.getBluePrint().getRawBlockStateFunction());
                 handleBlockPlacement(world, pos.below(), supportBlockState);
             }
 
@@ -930,11 +905,6 @@ public final class PlacementHandlers
           @Nullable final CompoundTag tileEntityData,
           final IPlacementContext placementContext)
         {
-            if (!handleBlockPlacement(world, pos, blockState))
-            {
-                return ActionProcessingResult.DENY;
-            }
-
             try
             {
                 // Try detecting inventory content.
@@ -942,13 +912,17 @@ public final class PlacementHandlers
             }
             catch (final Exception ex)
             {
-                // If we can't load the inventory content of the TE, return early, don't fill TE data.
+                // If we can't load the inventory content of the TE, don't fill TE data.
+                if (!handleBlockPlacement(world, pos, blockState))
+                {
+                    return ActionProcessingResult.DENY;
+                }
                 return ActionProcessingResult.SUCCESS;
             }
 
-            if (tileEntityData != null)
+            if (!handleBlockPlacement(world, pos, blockState, placementContext.getRotationMirror(), tileEntityData))
             {
-                handleTileEntityPlacement(tileEntityData, world, pos, placementContext.getRotationMirror());
+                return ActionProcessingResult.DENY;
             }
 
             return ActionProcessingResult.SUCCESS;

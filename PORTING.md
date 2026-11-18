@@ -3,10 +3,10 @@
 ## Source Baseline (locked)
 | Mod | Version | Source | Java files |
 |---|---|---|---|
-| minecolonies | 1.1.1403-1.21.1 (0.7.0 sync from 1.1.1399) | github.com/ldtteam/minecolonies tag v1.21.1-1.1.1403-snapshot | 2061 |
-| structurize | 1.0.833-1.21.1-snapshot | github.com/ldtteam/structurize tag v1.21.1-1.0.833-snapshot | 194 |
+| minecolonies | 1.1.1420-1.21.1 (0.7.0 sync from 1.1.1399) | github.com/ldtteam/minecolonies tag v1.21.1-1.1.1403-snapshot | 2061 |
+| structurize | 1.0.839-1.21.1-snapshot | github.com/ldtteam/structurize tag v1.21.1-1.0.833-snapshot | 194 |
 | blockui | 1.0.212-1.21.1-snapshot | github.com/ldtteam/blockui tag v1.21.1-1.0.212-snapshot | 109 |
-| domum-ornamentum | 1.0.236-snapshot | github.com/ldtteam/domum-ornamentum tag v1.21.1-1.0.236-snapshot | 231 |
+| domum-ornamentum | 1.0.237-snapshot | github.com/ldtteam/domum-ornamentum tag v1.21.1-1.0.236-snapshot | 231 |
 | multipiston | 1.2.58-1.21.1 | github.com/ldtteam/Piston-Unlimited branch release/1.21.1 | 8 |
 | towntalk | 1.2.0 | github.com/ldtteam/towntalk branch version/1.21 | 2 (+ sound assets) |
 

@@ -39,11 +39,15 @@ description='''${mod_description}'''
     ordering="AFTER"
     side="CLIENT"
 
-# PORT26-compat: Dynamic Trees lumberjack integration (tree family chopping/propagation)
+# PORT26-compat: Dynamic Trees lumberjack integration (tree family chopping/propagation).
+# Range must start at the 26.1-era beta build — Dynamic Trees for MC 26.1 ships as
+# 1.8.0-BETA04 and semver sorts pre-releases BELOW 1.8.0, so "[1.8,)" rejected the only
+# existing 26.1-compatible build (dev-run FML abort: "only supports dynamictrees 1.8
+# or above"). Including the beta explicitly accepts it and everything newer.
 [[dependencies.${mod_id}]]
     modId="dynamictrees"
     type="optional"
-    versionRange="[1.8,)"
+    versionRange="[1.8.0-BETA04,)"
     ordering="AFTER"
     side="BOTH"
 

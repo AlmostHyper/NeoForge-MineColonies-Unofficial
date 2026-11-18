@@ -40,6 +40,7 @@ public final class TagConstants
     public static final Identifier INDESTRUCTIBLE            = Identifier.fromNamespaceAndPath(MOD_ID, "indestructible");
     public static final Identifier MESHES                    = Identifier.fromNamespaceAndPath(MOD_ID, "meshes");
     public static final Identifier HOSTILE                   = Identifier.fromNamespaceAndPath(MOD_ID, "hostile");
+    public static final Identifier RAIDER_TARGETS            = Identifier.fromNamespaceAndPath(MOD_ID, "raider_targets");
     public static final Identifier BREAKABLE_ORE             = Identifier.fromNamespaceAndPath(MOD_ID, "breakable_ore");
     public static final Identifier RAW_ORE                   = Identifier.fromNamespaceAndPath(MOD_ID, "raw_ore");
     public static final Identifier MOB_ATTACK_BLACKLIST      = Identifier.fromNamespaceAndPath(MOD_ID, "mob_attack_blacklist");
