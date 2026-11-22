@@ -136,6 +136,12 @@ public class DataPackSyncEventHandler
             {
                 // PORT26: Player#getServer() is gone — reach the server through the level.
                 final MinecraftServer server = event.getEntity().level().getServer();
+                // PORT26 FIX: in singleplayer the login fires before the first server tick,
+                // so the lazy discovery in FMLEventHandler#onServerTick has not run yet and
+                // the compatibility lists would be serialized empty. Force it now (no-op
+                // if already discovered). Without this, the apiary "flowers" tab (and the
+                // smeltable-ore list) stayed permanently blank in singleplayer worlds.
+                ensureDiscovered(server);
                 sendPackets((ServerPlayer) event.getEntity(), new UpdateClientWithCompatibilityMessage(server.registryAccess()));
             }
         }
@@ -152,6 +158,24 @@ public class DataPackSyncEventHandler
             }
             loaded = true;
             discoverCompatLists(server);
+        }
+
+        /**
+         * PORT26 FIX (apiary flower tab empty in singleplayer):
+         * The lazy {@link #load(MinecraftServer)} runs on the FIRST server tick, but in
+         * singleplayer the local player logs in BEFORE that first tick fires. The login
+         * handler below then serialized a CompatibilityManager that had not discovered
+         * anything yet, so the client received empty lists ("Synchronized 0 flowers")
+         * and no further sync was ever sent. Dedicated servers are unaffected because
+         * the first tick (and thus discovery) happens long before any player joins.
+         *
+         * {@link #load(MinecraftServer)} is idempotent, so calling it here is a no-op
+         * once discovery already ran (dedicated / reload), and it guarantees correct
+         * data on the very first singleplayer login.
+         */
+        private static void ensureDiscovered(@NotNull final MinecraftServer server)
+        {
+            load(server);
         }
 
         /**

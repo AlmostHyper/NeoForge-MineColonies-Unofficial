@@ -126,20 +126,28 @@ public interface IMateriallyTexturedBlock
     // no longer exists in 26.1.2 (only the 1-arg getSoundType(BlockState) remains, which cannot see the BE).
 
     default void fillDOItemCategory(final Block inputBlock, final @NotNull NonNullList<ItemStack> items, List<ItemStack> fillItemGroupCache) {
-        if (!fillItemGroupCache.isEmpty()) {
-            items.addAll(fillItemGroupCache);
-            return;
+        // PORT26 FIX (ConcurrentModificationException): in singleplayer the server and the
+        // client (render thread) can both walk creative tab contents in the same JVM, which
+        // had one thread iterating the shared fillItemGroupCache while the other added to it.
+        // Build/fill the cache under a lock, then add from a snapshot so no thread ever
+        // iterates the live list while it can change.
+        final List<ItemStack> snapshot;
+        synchronized (fillItemGroupCache)
+        {
+            if (fillItemGroupCache.isEmpty())
+            {
+                try
+                {
+                    fillItemGroupCache.add(new ItemStack(inputBlock));
+                }
+                catch (final IllegalStateException exception)
+                {
+                    //Ignored. Thrown during start up.
+                }
+            }
+            snapshot = new ArrayList<>(fillItemGroupCache);
         }
-
-        try {
-            final ItemStack result = new ItemStack(inputBlock);
-            fillItemGroupCache.add(result);
-        }
-        catch (IllegalStateException exception) {
-            //Ignored. Thrown during start up.
-        }
-
-        items.addAll(fillItemGroupCache);
+        items.addAll(snapshot);
     }
 
     /**
