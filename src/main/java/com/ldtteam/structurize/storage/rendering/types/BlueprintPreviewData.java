@@ -3,10 +3,10 @@ package com.ldtteam.structurize.storage.rendering.types;
 import com.ldtteam.structurize.Structurize;
 import com.ldtteam.structurize.api.RotationMirror;
 import com.ldtteam.structurize.blueprints.v1.Blueprint;
+import com.ldtteam.structurize.client.ClientBlueprintHelper;
 import com.ldtteam.structurize.client.RenderingCacheKey;
 import com.ldtteam.structurize.network.messages.SyncPreviewCacheToServer;
 import com.ldtteam.structurize.storage.StructurePacks;
-import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -323,7 +323,8 @@ public class BlueprintPreviewData
             return;
         }
 
-        blueprint.setRotationMirror(rotationMirror, Minecraft.getInstance().level);
+        // PORT26: client-only call moved out so a dedicated server can load this class (see ClientBlueprintHelper)
+        ClientBlueprintHelper.applyRotationMirror(blueprint, rotationMirror);
         renderKey = new RenderingCacheKey(rotationMirror, blueprint);
 
         syncChangesToServer();
