@@ -8,6 +8,7 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.network.PacketDistributor;
+import org.apache.logging.log4j.LogManager;
 import org.jetbrains.annotations.Nullable;
 import java.util.Collection;
 
@@ -74,7 +75,10 @@ public interface IClientboundDistributor extends CustomPacketPayload
             "Got client chunk for server network message: " + this.getClass().getName() + " - " + chunk.getClass().getName();
         if (FMLEnvironment.isProduction())
         {
-            new IllegalArgumentException(crash).printStackTrace();
+            // PORT26 FIX (0.7.5, hardening): was a raw printStackTrace of a constructed
+            // IllegalArgumentException (unlogged stderr spam); route it through log4j.
+            LogManager.getLogger("domumornamentum").error("Network distributor misuse: " + crash,
+                new IllegalArgumentException(crash));
         }
         else
         {

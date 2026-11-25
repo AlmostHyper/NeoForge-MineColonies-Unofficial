@@ -1,5 +1,6 @@
 package com.minecolonies.core.client.render.worldevent;
 
+import com.ldtteam.structurize.api.Log;
 import com.ldtteam.structurize.blueprints.v1.Blueprint;
 import com.ldtteam.structurize.storage.StructurePacks;
 import com.ldtteam.structurize.storage.rendering.RenderingCache;
@@ -55,9 +56,12 @@ public class ColonyWaypointRenderer
                         wayPointTemplate = tempPreviewData;
                         pendingTemplate = null;
                     }
-                    catch (InterruptedException | ExecutionException e)
+                    catch (final InterruptedException | ExecutionException e)
                     {
-                        e.printStackTrace();
+                        // PORT26 FIX (0.7.5, hardening): was printStackTrace; a failed future also
+                        // left pendingTemplate set, so this retried (and spammed stderr) every frame.
+                        Log.getLogger().error("Failed to load waypoint template blueprint, waypoints will not render", e);
+                        pendingTemplate = null;
                     }
                 }
                 else

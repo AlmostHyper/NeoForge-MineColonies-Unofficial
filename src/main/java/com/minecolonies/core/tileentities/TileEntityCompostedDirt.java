@@ -3,6 +3,7 @@ package com.minecolonies.core.tileentities;
 import com.ldtteam.structurize.util.BlockUtils;
 import com.minecolonies.api.tileentities.ITickable;
 import com.minecolonies.api.tileentities.MinecoloniesTileEntities;
+import com.minecolonies.api.util.Log;
 import com.minecolonies.api.util.WorldUtil;
 import net.minecraft.world.level.block.AirBlock;
 import net.minecraft.world.level.block.DoublePlantBlock;
@@ -152,7 +153,8 @@ public class TileEntityCompostedDirt extends BlockEntity implements ITickable
             }
             catch (Exception e)
             {
-                e.printStackTrace();
+                // PORT26 FIX (0.7.5, hardening): was printStackTrace (raw stderr).
+                Log.getLogger().error("Failed to set composter flower", e);
             }
         }
         this.composted = true;

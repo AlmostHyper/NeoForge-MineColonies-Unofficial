@@ -50,7 +50,8 @@ public class UpdateSchematicsCommand extends AbstractCommand
         }
         catch (IOException e)
         {
-            e.printStackTrace();
+            // PORT26 FIX (0.7.5, hardening): was printStackTrace (raw stderr).
+            Log.getLogger().error("Failed to create schematic update folders under " + gameFolder, e);
         }
 
         try
@@ -62,7 +63,8 @@ public class UpdateSchematicsCommand extends AbstractCommand
         }
         catch (IOException e)
         {
-            e.printStackTrace();
+            // PORT26 FIX (0.7.5, hardening): was printStackTrace (raw stderr).
+            Log.getLogger().error("Failed to list schematic update input folder", e);
         }
 
 
@@ -82,7 +84,8 @@ public class UpdateSchematicsCommand extends AbstractCommand
             }
             catch (IOException e)
             {
-                e.printStackTrace();
+                // PORT26 FIX (0.7.5, hardening): was printStackTrace (raw stderr).
+                Log.getLogger().error("Failed to list schematic update folder " + input, e);
             }
             return;
         }
@@ -222,7 +225,8 @@ public class UpdateSchematicsCommand extends AbstractCommand
         }
         catch (final IOException e)
         {
-            e.printStackTrace();
+            // PORT26 FIX (0.7.5, hardening): was printStackTrace (raw stderr).
+            Log.getLogger().error("Failed to scan schematic during update", e);
         }
     }
 

@@ -146,7 +146,8 @@ public class CraftingTagAuditor
                 }
                 catch (IOException e)
                 {
-                    e.printStackTrace();
+                    // PORT26 FIX (0.7.5, hardening): was printStackTrace (raw stderr).
+                    Log.getLogger().error("Failed to write crafting tag audit entry", e);
                 }
             });
             writer.newLine();
@@ -175,7 +176,8 @@ public class CraftingTagAuditor
                 }
                 catch (IOException e)
                 {
-                    e.printStackTrace();
+                    // PORT26 FIX (0.7.5, hardening): was printStackTrace (raw stderr).
+                    Log.getLogger().error("Failed to write crafting tag audit entry", e);
                 }
             });
             writer.newLine();
@@ -272,7 +274,8 @@ public class CraftingTagAuditor
                       }
                       catch (IOException e)
                       {
-                          e.printStackTrace();
+                          // PORT26 FIX (0.7.5, hardening): was printStackTrace (raw stderr).
+                          Log.getLogger().error("Failed to write crafting tag audit entry", e);
                       }
                   });
             writer.newLine();

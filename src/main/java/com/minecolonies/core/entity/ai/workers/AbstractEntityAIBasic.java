@@ -375,15 +375,14 @@ public abstract class AbstractEntityAIBasic<J extends AbstractJob<?, J>, B exten
             }
 
             // fix for printing the actual exception
-            e.printStackTrace();
+            // PORT26 FIX (0.7.5, hardening): was printStackTrace (raw stderr).
+            Log.getLogger().error("Citizen AI exception (citizen will be paused/recovered)", e);
             Log.getLogger().warn("AI history for citizen error:{}", getStateAI().getHistory().getString());
         }
         catch (final RuntimeException exp)
         {
-            Log.getLogger().error("Welp reporting crashed:");
-            exp.printStackTrace();
-            Log.getLogger().error("Caused by ai exception:");
-            e.printStackTrace();
+            Log.getLogger().error("Welp reporting crashed:", exp);
+            Log.getLogger().error("Caused by ai exception:", e);
         }
     }
 

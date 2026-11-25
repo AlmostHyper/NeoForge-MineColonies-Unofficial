@@ -121,9 +121,13 @@ public abstract class AbstractStructureHandler implements IStructureHandler
                 blueprint = blueprintFuture.get();
                 blueprint.setRotationMirror(rotMir, world);
             }
-            catch (InterruptedException | ExecutionException e)
+            // PORT26 FIX (0.7.5, hardening): was printStackTrace; a failed future also left
+            // blueprintFuture set, so every getBluePrint() call retried the same failing
+            // get() (stderr spam every tick). Drop the future and log once instead.
+            catch (final InterruptedException | ExecutionException e)
             {
-                e.printStackTrace();
+                com.ldtteam.structurize.api.Log.getLogger().error("Failed to load blueprint for structure placement, placement aborted", e);
+                blueprintFuture = null;
             }
         }
         return this.blueprint;
