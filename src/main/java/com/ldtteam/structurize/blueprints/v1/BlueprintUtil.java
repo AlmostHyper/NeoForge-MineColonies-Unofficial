@@ -43,6 +43,41 @@ public class BlueprintUtil
 {
     public static final int DEFAULT_FIXER_IF_NOT_FOUND = DataVersion.v1_12_2.getDataVersion();
 
+    /**
+     * PORT26 FIX (0.7.5, hardening): thread-local "currently loading blueprint file" context.
+     * Set by StructurePacks while a .blueprint file is being parsed (on the IO pool thread),
+     * so that every validation warning below can name the exact file that is corrupt
+     * instead of leaving the reporter with a cryptic stack trace.
+     */
+    private static final ThreadLocal<String> CURRENT_BLUEPRINT_FILE = new ThreadLocal<>();
+
+    /**
+     * Set the current loading context (called by StructurePacks).
+     * @param context e.g. "mypack: styles/shire/townhall.blueprint".
+     */
+    public static void setCurrentBlueprintFile(final String context)
+    {
+        CURRENT_BLUEPRINT_FILE.set(context);
+    }
+
+    /**
+     * Clear the current loading context (called by StructurePacks in finally).
+     */
+    public static void clearCurrentBlueprintFile()
+    {
+        CURRENT_BLUEPRINT_FILE.remove();
+    }
+
+    /**
+     * Describe the blueprint file currently being loaded on this thread.
+     * @return the context string or "(unknown file)".
+     */
+    public static String currentBlueprintFileContext()
+    {
+        final String context = CURRENT_BLUEPRINT_FILE.get();
+        return context == null || context.isEmpty() ? "(unknown file)" : context;
+    }
+
     public static final String NBT_OPTIONAL_DATA_TAG = "optional_data";
 
     /**
@@ -576,7 +611,20 @@ public class BlueprintUtil
                 newBlocksToBlockId.put(newBlockState, newBlockId);
                 paletteFull = true;
             }
-            blocks[e.getValue().getY()][e.getValue().getZ()][e.getValue().getX()] = newBlockId;
+            final int blockY = e.getValue().getY();
+            final int blockZ = e.getValue().getZ();
+            final int blockX = e.getValue().getX();
+            // PORT26 FIX (0.7.5, hardening): guard the array write — a TE position outside
+            // the structure bounds would throw AIOOBE here just like in the constructor.
+            if (blockY >= 0 && blockY < blocks.length && blockZ >= 0 && blockZ < blocks[blockY].length && blockX >= 0 && blockX < blocks[blockY][blockZ].length)
+            {
+                blocks[blockY][blockZ][blockX] = newBlockId;
+            }
+            else
+            {
+                Log.getLogger().warn("Skipping out-of-bounds tile entity replacement at ({}, {}, {}) in blueprint {}",
+                  blockX, blockY, blockZ, currentBlueprintFileContext());
+            }
         }
     }
 
@@ -629,11 +677,13 @@ public class BlueprintUtil
         {
             short sizeX = tag.getShortOr("size_x", (short) 0), sizeY = tag.getShortOr("size_y", (short) 0), sizeZ = tag.getShortOr("size_z", (short) 0);
 
-            // Reading required Mods
+            // PORT26 FIX (0.7.5, hardening): a corrupt blueprint can miss the required_mods tag
+            // entirely; the old unchecked cast + size() read threw NPE and killed the load future.
+            final ListTag modsListRaw = (ListTag) tag.get("required_mods");
+            final ListTag modsList = modsListRaw != null ? modsListRaw : new ListTag();
+            short modListSize = (short) modsList.size();
             List<String> requiredMods = new ArrayList<>();
             List<String> missingMods = new ArrayList<>();
-            ListTag modsList = (ListTag) tag.get("required_mods");
-            short modListSize = (short) modsList.size();
             for (int i = 0; i < modListSize; i++)
             {
                 // PORT26: Tag#getAsString() removed -> ListTag#getStringOr(i, "") for string lists
@@ -649,7 +699,14 @@ public class BlueprintUtil
             final int oldDataVersion = tag.getIntOr("mcversion", DEFAULT_FIXER_IF_NOT_FOUND);
 
             // Reading Pallete
-            ListTag paletteTag = (ListTag) tag.get("palette");
+            // PORT26 FIX (0.7.5, hardening): a blueprint without a palette is unusable —
+            // fail this file cleanly (null) instead of throwing NPE inside fixPalette.
+            final ListTag paletteTag = (ListTag) tag.get("palette");
+            if (paletteTag == null || paletteTag.isEmpty())
+            {
+                Log.getLogger().error("Blueprint is corrupt: missing or empty 'palette' tag in blueprint {}, skipping file", currentBlueprintFileContext());
+                return null;
+            }
             List<BlockState> palette = fixPalette(oldDataVersion, paletteTag);
 
             // Reading Blocks
@@ -657,10 +714,13 @@ public class BlueprintUtil
             short[][][] blocks = convertSaveDataToBlocks(tag.getIntArray("blocks").orElse(new int[0]), sizeX, sizeY, sizeZ);
 
             // Reading Tile Entities
-            CompoundTag[] tileEntities = fixTileEntities(oldDataVersion, (ListTag) tag.get("tile_entities"));
+            // PORT26 FIX (0.7.5, hardening): tolerate missing tile_entities / entities tags.
+            final ListTag tileEntitiesTag = (ListTag) tag.get("tile_entities");
+            CompoundTag[] tileEntities = fixTileEntities(oldDataVersion, tileEntitiesTag != null ? tileEntitiesTag : new ListTag());
 
             // Reading Entities
-            CompoundTag[] entities = fixEntities(oldDataVersion, (ListTag) tag.get("entities"));
+            final ListTag entitiesTag = (ListTag) tag.get("entities");
+            CompoundTag[] entities = fixEntities(oldDataVersion, entitiesTag != null ? entitiesTag : new ListTag());
 
             if (oldDataVersion == DEFAULT_FIXER_IF_NOT_FOUND)
             {
@@ -720,7 +780,8 @@ public class BlueprintUtil
         }
         catch (IOException e)
         {
-            e.printStackTrace();
+            // PORT26 FIX (0.7.5, hardening): was printStackTrace (raw stderr spam).
+            Log.getLogger().error("Failed to write blueprint to stream", e);
         }
     }
 
@@ -779,8 +840,21 @@ public class BlueprintUtil
      */
     public static short[][][] convertSaveDataToBlocks(int[] ints, short sizeX, short sizeY, short sizeZ)
     {
+        // PORT26 FIX (0.7.5, hardening): the old loop indexed oneDimArray purely by the
+        // sizeX/sizeY/sizeZ header values. A blueprint whose "blocks" payload does not
+        // exactly match the header (corrupt file, partial write, foreign/converted data)
+        // threw ArrayIndexOutOfBoundsException and killed the whole load future.
+        // We now validate the payload length against the header up front and clamp/
+        // pad with palette index 0 instead of throwing.
+        if (sizeX <= 0 || sizeY <= 0 || sizeZ <= 0)
+        {
+            Log.getLogger().warn("Blueprint block data is invalid: non-positive structure size ({}x{}x{}) in blueprint {}, treating as empty structure",
+              sizeX, sizeY, sizeZ, currentBlueprintFileContext());
+            return new short[0][0][0];
+        }
+
         // Convert int array to short array
-        short[] oneDimArray = new short[ints.length * 2];
+        final short[] oneDimArray = new short[ints.length * 2];
 
         for (int i = 0; i < ints.length; i++)
         {
@@ -789,7 +863,30 @@ public class BlueprintUtil
         }
 
         // Convert 1 Dimensional Array to 3 Dimensional Array
-        short[][][] multDimArray = new short[sizeY][sizeZ][sizeX];
+        final short[][][] multDimArray = new short[sizeY][sizeZ][sizeX];
+
+        final int expectedCount = (int) sizeX * sizeY * sizeZ;
+        // PORT26 FIX (0.7.6, log noise): the "blocks" tag packs TWO palette indices per int
+        // (see convertBlocksToSaveData: high 16 bits first, then low 16 bits). When the
+        // structure has an ODD number of blocks the writer pads the final int with a zero
+        // slot, so the unpacked payload is exactly one slot longer than the header count.
+        // That is normal format padding, not corruption — yet 0.7.5 compared the lengths
+        // for equality and logged a false "file is corrupt" WARN for every odd-sized
+        // blueprint, on every load (build tool, placement, server build), which users
+        // rightly reported as heavy log spam. Now:
+        //   - payload SHORTER than the header count is real data loss -> WARN (padded with air);
+        //   - payload longer (the usual +1 padding slot, or trailing junk) -> ignored, DEBUG only.
+        if (oneDimArray.length < expectedCount)
+        {
+            Log.getLogger().warn("Blueprint block data is truncated in blueprint {}: header says {}x{}x{} ({} entries) but payload has only {} entries. "
+                + "The missing entries are padded with air; the file may be corrupt.",
+                currentBlueprintFileContext(), sizeX, sizeY, sizeZ, expectedCount, oneDimArray.length);
+        }
+        else if (oneDimArray.length > expectedCount)
+        {
+            Log.getLogger().debug("Ignoring {} trailing block data slot(s) after the {} entries announced by the header (odd-count padding or trailing junk) in blueprint {}",
+                oneDimArray.length - expectedCount, expectedCount, currentBlueprintFileContext());
+        }
 
         int i = 0;
         for (short y = 0; y < sizeY; y++)
@@ -798,7 +895,9 @@ public class BlueprintUtil
             {
                 for (short x = 0; x < sizeX; x++)
                 {
-                    multDimArray[y][z][x] = oneDimArray[i++];
+                    // PORT26 FIX (0.7.5, hardening): bounds-checked read; missing data pads with 0 (air).
+                    multDimArray[y][z][x] = i < oneDimArray.length ? oneDimArray[i] : (short) 0;
+                    i++;
                 }
             }
         }

@@ -394,9 +394,11 @@ public final class WindowExtendedBuildTool extends AbstractBlueprintManipulation
                     index++;
                 }
             }
-            catch (InterruptedException | ExecutionException e)
+            catch (final Exception e)
             {
-                e.printStackTrace();
+                // PORT26 FIX (0.7.5, hardening): was printStackTrace; also catches runtime
+                // errors thrown while building the category buttons themselves.
+                Log.getLogger().error("Failed to render build tool categories for pack " + currentStructurePack, e);
             }
             categoryFutures = null;
         }
@@ -434,7 +436,11 @@ public final class WindowExtendedBuildTool extends AbstractBlueprintManipulation
                 }
                 catch (final Exception ex)
                 {
-                    Log.getLogger().error("Something happened when loading subcategories", ex);
+                    // PORT26 FIX (0.7.5, hardening): without the reset below, a failed
+                    // subcategory future was retried on every frame (log spam forever).
+                    Log.getLogger().error("Something happened when loading subcategories at " + nextDepth, ex);
+                    nextDepthMeta.remove(nextDepth);
+                    nextDepth = "";
                 }
             }
         }
@@ -448,9 +454,15 @@ public final class WindowExtendedBuildTool extends AbstractBlueprintManipulation
                     updateBlueprints(blueprints.get(), nextDepth);
                     nextDepth = "";
                 }
-                catch (InterruptedException | ExecutionException e)
+                // PORT26 FIX (0.7.5, hardening): a failed blueprint-list future (e.g. a corrupt
+                // .blueprint file) used to leave nextDepth set, so onUpdate retried the same
+                // failing future every single frame — spamming the log and freezing the GUI.
+                // Reset the depth, drop the failed future and log once with context.
+                catch (final Exception e)
                 {
-                    e.printStackTrace();
+                    Log.getLogger().error("Failed to load build tool blueprints at '" + nextDepth + "' in pack " + currentStructurePack, e);
+                    blueprintsAtDepth.remove(nextDepth);
+                    nextDepth = "";
                 }
             }
         }

@@ -177,8 +177,21 @@ public class Blueprint implements IFakeLevelBlockGetter
         {
             if (te != null)
             {
-                // PORT26: getShort(key) -> getShortOr(key, def) (getShort now returns Optional)
-                this.tileEntities[te.getShortOr("y", (short) 0)][te.getShortOr("z", (short) 0)][te.getShortOr("x", (short) 0)] = te;
+                // PORT26 FIX (0.7.5, hardening): a tile entity whose stored coordinates sit
+                // outside the structure bounds (corrupt or foreign blueprint data — seen in
+                // the wild as "Index 16 out of bounds for length 16" on the shire town hall)
+                // used to throw ArrayIndexOutOfBoundsException right here and kill the whole
+                // load future. Skip that single tile entity with a warning naming the file.
+                final int teY = te.getShortOr("y", (short) 0);
+                final int teZ = te.getShortOr("z", (short) 0);
+                final int teX = te.getShortOr("x", (short) 0);
+                if (teY < 0 || teY >= sizeY || teZ < 0 || teZ >= sizeZ || teX < 0 || teX >= sizeX)
+                {
+                    Log.getLogger().warn("Skipping tile entity at ({}, {}, {}) outside structure bounds {}x{}x{} in blueprint {}",
+                      teX, teY, teZ, sizeX, sizeY, sizeZ, BlueprintUtil.currentBlueprintFileContext());
+                    continue;
+                }
+                this.tileEntities[teY][teZ][teX] = te;
             }
         }
         this.requiredMods = requiredMods;

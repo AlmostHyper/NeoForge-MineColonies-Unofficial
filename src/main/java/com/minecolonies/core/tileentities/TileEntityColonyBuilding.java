@@ -10,6 +10,7 @@ import com.minecolonies.api.colony.IColony;
 import com.minecolonies.api.colony.IColonyManager;
 import com.minecolonies.api.colony.IColonyView;
 import com.minecolonies.api.colony.buildings.IBuilding;
+import com.minecolonies.api.util.Log;
 import com.minecolonies.api.colony.buildings.IBuildingContainer;
 import com.minecolonies.api.colony.buildings.views.IBuildingView;
 import com.minecolonies.api.colony.permissions.Action;
@@ -522,9 +523,12 @@ public class TileEntityColonyBuilding extends AbstractTileEntityColonyBuilding i
                 processBlueprint(pendingBlueprintFuture.get());
                 pendingBlueprintFuture = null;
             }
-            catch (InterruptedException | ExecutionException e)
+            // PORT26 FIX (0.7.5, hardening): was printStackTrace; a failed future also left
+            // pendingBlueprintFuture set, so this retried (and spammed stderr) on every tick.
+            catch (final InterruptedException | ExecutionException e)
             {
-                e.printStackTrace();
+                Log.getLogger().error("Failed to load pending building blueprint, blueprint preview aborted", e);
+                pendingBlueprintFuture = null;
             }
         }
     }

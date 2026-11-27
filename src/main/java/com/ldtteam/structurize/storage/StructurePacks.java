@@ -428,6 +428,8 @@ public class StructurePacks
      */
     public static Blueprint getBlueprint(final String pack, final Path path, final boolean suppressError, final HolderLookup.Provider provider)
     {
+        // PORT26 FIX (0.7.5, hardening): name the file in every parse warning (see BlueprintUtil).
+        BlueprintUtil.setCurrentBlueprintFile(pack + ":" + path);
         try
         {
             final CompoundTag nbt = NbtIo.readCompressed(new ByteArrayInputStream(Files.readAllBytes(path)), NbtAccounter.unlimitedHeap());
@@ -445,6 +447,18 @@ public class StructurePacks
             {
                 Log.getLogger().error("Error loading blueprint: "  + pack + ":" + path, e);
             }
+        }
+        // PORT26 FIX (0.7.5, hardening): corrupt blueprint data used to escape as a raw
+        // RuntimeException (NPE, AIOOBE, ...) and kill the whole loading future; the
+        // caller then showed a cryptic ExecutionException. Catch it here, name the file,
+        // and continue without it.
+        catch (final RuntimeException e)
+        {
+            Log.getLogger().error("Blueprint file is corrupt and was skipped: " + pack + ":" + path, e);
+        }
+        finally
+        {
+            BlueprintUtil.clearCurrentBlueprintFile();
         }
         return null;
     }
@@ -511,6 +525,8 @@ public class StructurePacks
                 paths.forEach(file -> {
                     if (!Files.isDirectory(file) && file.toString().endsWith("blueprint"))
                     {
+                        // PORT26 FIX (0.7.5, hardening): name the file in every parse warning (see BlueprintUtil).
+                        BlueprintUtil.setCurrentBlueprintFile(structurePackId + ":" + file);
                         try
                         {
                             final CompoundTag nbt = NbtIo.readCompressed(new ByteArrayInputStream(Files.readAllBytes(file)), NbtAccounter.unlimitedHeap());
@@ -526,6 +542,18 @@ public class StructurePacks
                         {
                             Log.getLogger().error("Error loading individual blueprint: " + file, e);
                         }
+                        // PORT26 FIX (0.7.5, hardening): one corrupt .blueprint file in a folder
+                        // used to escape the stream lambda as a RuntimeException and abort
+                        // the whole folder listing (the build tool GUI then failed to show
+                        // anything and retried every frame). Skip the single file, keep the list.
+                        catch (final RuntimeException e)
+                        {
+                            Log.getLogger().error("Blueprint file is corrupt and was skipped: " + file, e);
+                        }
+                        finally
+                        {
+                            BlueprintUtil.clearCurrentBlueprintFile();
+                        }
                     }
                 });
             }
@@ -533,6 +561,12 @@ public class StructurePacks
         catch (final IOException e)
         {
             Log.getLogger().error("Error loading blueprints from folder: " + packMeta.getNormalizedSubPath(subPath), e);
+        }
+        // PORT26 FIX (0.7.5, hardening): belt-and-braces — any unexpected runtime failure
+        // while listing the folder must not bubble out of this method as a raw exception.
+        catch (final RuntimeException e)
+        {
+            Log.getLogger().error("Unexpected error while loading blueprints from folder: " + packMeta.getNormalizedSubPath(subPath), e);
         }
 
         blueprints.sort(Comparator.comparing(Blueprint::getFileName));

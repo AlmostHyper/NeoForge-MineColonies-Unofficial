@@ -9,6 +9,7 @@ import com.ldtteam.blockui.controls.Text;
 import com.ldtteam.blockui.views.DropDownList;
 import com.ldtteam.structurize.client.gui.WindowSwitchPack;
 import com.ldtteam.structurize.storage.StructurePacks;
+import com.minecolonies.api.util.Log;
 import com.minecolonies.core.client.gui.WindowBannerPicker;
 import com.minecolonies.core.client.gui.map.WindowColonyMap;
 import com.minecolonies.core.colony.buildings.workerbuildings.BuildingTownHall;
@@ -340,7 +341,8 @@ public class WindowMainPage extends AbstractWindowTownHall
             {
                 if (!(e instanceof FileNotFoundException))
                 {
-                    e.printStackTrace();
+                    // PORT26 FIX (0.7.5, hardening): was printStackTrace (raw stderr).
+                    Log.getLogger().error("Failed to read feature-unlock response for the town hall UI", e);
                 }
             }
         }).start();

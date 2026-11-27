@@ -192,9 +192,14 @@ public class BlueprintPreviewData
                     this.blueprintFuture = null;
                 }
             }
-            catch (InterruptedException | ExecutionException e)
+            // PORT26 FIX (0.7.5, hardening): a failed blueprint future left the field set,
+            // so this block retried the same failing get() on every render tick — that was
+            // the raw stderr stack-trace spam seen in earlier test logs. Drop the failed
+            // future and log it once through the mod logger instead.
+            catch (final InterruptedException | ExecutionException e)
             {
-                e.printStackTrace();
+                com.ldtteam.structurize.api.Log.getLogger().error("Failed to load blueprint preview (giving up on this preview, showing empty)", e);
+                this.blueprintFuture = null;
             }
         }
 
